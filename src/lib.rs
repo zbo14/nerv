@@ -1,16 +1,26 @@
 // #![feature(test)]
 #![deny(missing_docs)]
 
-//!Neural nets with: 
+//!Neural nets with:
+
+//!* online learning
+//!     * forward propagation of values
+//!     * back propagation of errors
+//!     * bias and weight updates for each neuron
+//!     * repeat!
+//!* variable number of hidden layers
+//!* different numbers of neurons per hidden layer
+//!* choice of transfer function
+//!     * sigmoid 
+//!     * hyperbolic tangent (tanh)
+//!     * rectifier
+//!     * leaky rectifier
 //!
-//!  * online learning
-//!  * variable number of hidden layers
-//!  * different numbers of neurons per hidden layer
+//!## Example
+//!The following example is adapted from this [tutorial](https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/), which uses the [wheat seeds dataset](http://archive.ics.uci.edu/ml/datasets/seeds) from the UCI Machine Learning repository. 
 //!
-//!# Example
-//!The following example is adapted from this [tutorial](https://machinelearningmastery.com/implement-backpropagation-algorithm-scratch-python/), which uses the [wheat seeds dataset](http://archive.ics.uci.edu/ml/datasets/seeds) from the UCI Machine Learning repository.
-//!
-//!```
+//!### Code
+//!```rust
 //!extern crate csv;
 //!extern crate nerv;
 //!extern crate rand;
@@ -25,67 +35,67 @@
 //!
 //!fn main() {
 //!
-//!    let epochs = 500;
-//!    let learn_rate = 0.3;
-//!    let num_folds = 5;
-//!    let params = &[NUM_INPUTS, 5, NUM_OUTPUTS];
+//!     let epochs = 500;
+//!     let learn_rate = 0.3;
+//!     let num_folds = 5;
+//!     let layers = &[NUM_INPUTS, 5, NUM_OUTPUTS];
 //!
-//!    // Create a new nnet
-//!    let mut rng = thread_rng();
-//!    let mut nnet = NNet::new(params, "sigmoid", &mut rng).unwrap();
+//!     // Create a new nnet
+//!     let mut rng = thread_rng();
+//!     let mut nnet = NNet::new(layers, "sigmoid", &mut rng).unwrap();
 //!
-//!    // Read csv into Vec<Vec<f64>>
-//!    let mut r = Reader::from_path("seeds.csv").unwrap();
-//!    let mut data = r.deserialize::<Vec<f64>>().map(|rec| rec.unwrap()).collect::<Vec<_>>();
+//!     // Read csv into Vec<Vec<f64>>
+//!     let mut r = Reader::from_path("seeds.csv").unwrap();
+//!     let mut data = r.deserialize::<Vec<f64>>().map(|rec| rec.unwrap()).collect::<Vec<_>>();
 //!
-//!    // Normalize inputs
-//!    normalize_inputs(data.as_mut_slice());
+//!     // Normalize inputs
+//!     normalize_inputs(data.as_mut_slice());
 //!
-//!    // Shuffle data, split into train and test set
-//!    rng.shuffle(&mut data);
-//!    let rows_per_fold = data.len() / num_folds;
-//!    let (test_data, train_data) = data.split_at_mut(rows_per_fold);
+//!     // Shuffle data, split into train and test set
+//!     rng.shuffle(&mut data);
+//!     let rows_per_fold = data.len() / num_folds;
+//!     let (test_data, train_data) = data.split_at_mut(rows_per_fold);
 //!
-//!    // Train
-//!    nnet.train_online(train_data, epochs, learn_rate).unwrap();
+//!     // Train
+//!     nnet.train_online(train_data, epochs, learn_rate).unwrap();
 //!
-//!    // Predict and check results
-//!    check_accuracy(&mut nnet, test_data);
+//!     // Predict and check results
+//!     check_accuracy(&mut nnet, test_data);
 //!}
 //!
 //!fn normalize_inputs(data: &mut[Vec<f64>]) {
-//!    let mut min;
-//!    let mut max;
-//!    for i in 0..NUM_INPUTS {
-//!        min = INFINITY;
-//!        max = -INFINITY;
-//!        for row in data.iter() {
-//!            if row[i] > max {
-//!                max = row[i];
-//!            } else if row[i] < min {
-//!                min = row[i]
-//!            }
-//!        }
-//!        let diff = max - min;
-//!        for row in data.iter_mut() {
-//!            row[i] = (row[i] - min) / diff;
-//!        }
-//!    }
+//!     let mut min;
+//!     let mut max;
+//!     for i in 0..NUM_INPUTS {
+//!         min = INFINITY;
+//!         max = -INFINITY;
+//!         for row in data.iter() {
+//!             if row[i] > max {
+//!                 max = row[i];
+//!             } else if row[i] < min {
+//!                 min = row[i]
+//!             }
+//!         }
+//!         let diff = max - min;
+//!         for row in data.iter_mut() {
+//!             row[i] = (row[i] - min) / diff;
+//!         }
+//!     }
 //!}
 //!
 //!fn check_accuracy(nnet: &mut NNet, data: &mut [Vec<f64>]) {
-//!    let mut num_correct = 0;
-//!    for row in data.iter_mut() {
-//!        let (inputs, outputs) = row.split_at_mut(NUM_INPUTS);
-//!        let predicts = nnet.predict(inputs).unwrap();
-//!        let i = predicts.iter().enumerate().max_by(|&(_,v1), &(_,v2)| {
-//!            v1.partial_cmp(&v2).unwrap()
-//!        }).unwrap().0;
-//!        if outputs[i] == 1.0 {
-//!            num_correct += 1;
-//!        }
-//!    } 
-//!    println!("Accuracy: {} / {}", num_correct, data.len());
+//!     let mut num_correct = 0;
+//!     for row in data.iter_mut() {
+//!         let (inputs, outputs) = row.split_at_mut(NUM_INPUTS);
+//!         let predicts = nnet.predict(inputs).unwrap();
+//!         let i = predicts.iter().enumerate().max_by(|&(_,v1), &(_,v2)| {
+//!             v1.partial_cmp(&v2).unwrap()
+//!         }).unwrap().0;
+//!         if outputs[i] == 1.0 {
+//!             num_correct += 1;
+//!         }
+//!     } 
+//!     println!("Accuracy: {} / {}", num_correct, data.len());
 //!}
 //!```
 
@@ -108,9 +118,7 @@ struct Transfer{
     rand: fn(&mut ThreadRng) -> f64,
 }
 
-/*
-
-fn rectifier(x: f64) -> f64 {
+fn f_rectifier(x: f64) -> f64 {
     if x > 0.0 {
         x
     } else {
@@ -118,15 +126,45 @@ fn rectifier(x: f64) -> f64 {
     }
 }
 
+fn df_rectifier(x: f64) -> f64 {
+    if x > 0.0 {
+        1.0
+    } else {
+        0.0
+    }
+}
+
 fn rectifier_transfer() -> Transfer {
     Transfer{
-        f: rectifier,
-        df: rectifier,
+        f: f_rectifier,
+        df: df_rectifier,
         rand: rand_clamped,
     }
 }
 
-*/
+fn f_leaky_rectifier(x: f64) -> f64 {
+    if x > 0.0 {
+        x
+    } else {
+        0.01 * x
+    }
+}
+
+fn df_leaky_rectifier(x: f64) -> f64 {
+    if x > 0.0 {
+        1.0
+    } else {
+        0.01
+    }
+}
+
+fn leaky_rectifier_transfer() -> Transfer {
+    Transfer{
+        f: f_leaky_rectifier,
+        df: df_leaky_rectifier,
+        rand: rand_clamped,
+    }
+}
 
 fn f_sigmoid(x: f64) -> f64 {
     1.0 / (1.0 + (-x).exp())
@@ -243,27 +281,29 @@ impl NNet {
     ///use rand::thread_rng;
     ///
     ///fn main() {
-    ///    let params = &[4, 5, 6, 7, 2];
+    ///    let layers = &[4, 5, 6, 7, 2];
     ///    let mut rng = thread_rng();
-    ///    let mut nnet = NNet::new(params, "sigmoid", &mut rng);
+    ///    let mut nnet = NNet::new(layers, "sigmoid", &mut rng);
     ///    // ...
     ///}
     ///```
-    pub fn new(params: &[usize], transfer: &str, rng: &mut ThreadRng) -> Result<NNet,String> {
+    pub fn new(layers: &[usize], transfer: &str, rng: &mut ThreadRng) -> Result<NNet,String> {
         let transfer = match transfer {
+            "leaky_rectifier" => Ok(leaky_rectifier_transfer()),
+            "rectifier" => Ok(rectifier_transfer()),
             "sigmoid" => Ok(sigmoid_transfer()),
             "tanh" => Ok(tanh_transfer()),
             _ => Err(format!("unexpected transfer: {}", transfer)),
         }?;
-        let layers = (1..params.len()).map(|i| {
-            NNet::layer(params[i-1], params[i], &transfer, rng)
-        }).collect::<Vec<_>>();
-        let num_layers = params.len() - 1;
+        let num_layers = layers.len() - 1;
         let num_hidden_layers = num_layers - 1;
-        let num_inputs = params[0];
-        let num_outputs = params[num_layers];
+        let num_inputs = layers[0];
+        let num_outputs = layers[num_layers];
         let outputs = vec![0.0; num_outputs];
         let row_size = num_inputs + num_outputs;
+        let layers = (1..layers.len()).map(|i| {
+            NNet::layer(layers[i-1], layers[i], &transfer, rng)
+        }).collect::<Vec<_>>();
         let nnet = NNet{
             error: 0.0,
             layers,
@@ -655,7 +695,7 @@ mod tests {
     #[should_panic]
     fn test_unexpected_transfer() {
         let mut rng = rand::thread_rng();
-        NNet::new(&[2, 2, 2], "rectifier", &mut rng).unwrap();
+        NNet::new(&[2, 2, 2], "softmax", &mut rng).unwrap();
     }
 
     #[test]
@@ -735,11 +775,11 @@ mod tests {
         let epochs = 500;
         let learn_rate = 0.3;
         let num_folds = 5;
-        let params = &[NUM_INPUTS, 5, NUM_OUTPUTS];
+        let layers = &[NUM_INPUTS, 5, NUM_OUTPUTS];
 
         // Create a new nnet
         let mut rng = rand::thread_rng();
-        let mut nnet = NNet::new(params, "sigmoid", &mut rng).unwrap();
+        let mut nnet = NNet::new(layers, "sigmoid", &mut rng).unwrap();
 
         // Read csv into Vec<Vec<f64>>
         let mut r = csv::Reader::from_path("seeds.csv").unwrap();
